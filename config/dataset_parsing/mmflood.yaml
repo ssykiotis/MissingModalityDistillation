@@ -1,0 +1,2 @@
+_src_: src.dataset_parsing.MMFlood.MMFloodParser
+dataset_location: 'data/mmflood'
