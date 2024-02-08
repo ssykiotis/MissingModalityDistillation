@@ -15,12 +15,12 @@ class MMFloodParser:
         self.sample_paths  = self.parse_data()
 
         self.img_dim            = params.img_dim
-        self.normalization      = params.normalization
+        # self.normalization      = params.normalization
         self.missing_modalities = params.missing_modalities
 
         self.train_samples, self.val_samples, self.test_samples = self.train_test_split()
 
-        self.norm_params   = NormParams()
+        self.norm_params   = NormParams(normalization = params.normalization)
 
 
     def parse_data(self,shuffle:bool = False) -> list:
@@ -49,14 +49,14 @@ class MMFloodParser:
         x, y = self.read_data(dataset_type)
         
         if dataset_type == 'train':
-            if self.normalization == 'gauss':
+            if self.norm_params.normalization == 'gauss':
                 self.norm_params.x_mean = x.astype(np.float32).mean()
                 self.norm_params.x_std  = x.astype(np.float32).std()
-            elif self.normalization == 'minmax':
+            elif self.norm_params.normalization == 'minmax':
                 self.norm_params.x_min = x.astype(np.float32).min()
                 self.norm_params.x_max = x.astype(np.float32).max()
         
-        return MissingModalityDistillationDataset(self.config, x, y, training_mode, self.norm_params)
+        return MissingModalityDistillationDataset(x, y, training_mode, self.missing_modalities, self.norm_params)
 
         
     def read_data(self, dataset_type:str) -> [np.ndarray, np.ndarray]:
@@ -73,7 +73,7 @@ class MMFloodParser:
         assert len(s1_paths)==len(dem_paths), 'Number of s1 patches and DEM patches missmatch!'
         assert len(s1_paths)==len(mask_paths),'Number of s1 patches and mask patches missmatch!'
 
-        patches = list(zip([s1_paths, dem_paths, mask_paths]))
+        patches = list(zip(s1_paths, dem_paths, mask_paths))
 
         num_patches = len(patches)
 

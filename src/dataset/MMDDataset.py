@@ -7,14 +7,12 @@ from omegaconf import DictConfig
 
 class MissingModalityDistillationDataset:
     
-    def __init__(self, config:DictConfig, x: np.ndarray, y:np.ndarray, training_mode:str, norm_params: NormParams):
+    def __init__(self, x: np.ndarray, y:np.ndarray, training_mode:str, norm_params: NormParams,missing_modalities:list = None):
         self.training_mode    = training_mode
-        self.missing_modalies = self.config.dataset.missing_modalities
-        self.config           = config
+        self.missing_modalies = missing_modalities
         self.x = x
         self.y = y
 
-        self.normalization = self.config.dataset.normalization
         self.norm_params   = self.set_norm_params(norm_params)
 
         self.filter_data()
@@ -26,13 +24,11 @@ class MissingModalityDistillationDataset:
         
         if norm_params.x_mean is None:
             norm_params.x_mean = self.x.mean(axis = (0,2,3))
-            norm_params.x_std  = self.x.std(axis = (0,2,3))
+            norm_params.x_std  = self.x.std( axis = (0,2,3))
         
         return norm_params
 
-    #TODO
     def __getitem__(self,index):
-        # prepei na bei kai ena clause gia to distillation, na gyrnaei 2 zeygaria
         if self.training_mode != 'distillation':
             x = self.x[index]
             y = self.y[index]
@@ -51,9 +47,9 @@ class MissingModalityDistillationDataset:
             return x, x_missing, y
 
     def normalize(self,x):
-        if self.normalization == 'minmax':
+        if self.norm_params.normalization == 'minmax':
             return ((x.T-self.norm_params.x_min)/(self.norm_params.x_max-self.norm_params.x_min)).T 
-        elif self.normalization == 'gauss':
+        elif self.norm_params.normalization == 'gauss':
             return ((x.T - self.norm_params.x_mean)/self.norm_params.x_std).T
         else:
             return x
