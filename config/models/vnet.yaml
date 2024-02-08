@@ -1,2 +1,0 @@
-_target_: src.models.Vnet.VNet
-n_channels, n_classes, n_filters, normalization = 'none', has_dropout = False

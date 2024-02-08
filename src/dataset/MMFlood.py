@@ -8,13 +8,15 @@ import rasterio
 
 class MMFloodParser:
 
-    def __init__(self,config: DictConfig):
-        self.config        = config
-        self.data_location = config.dataset.data_location
-        self.val_per       = config.dataset.val_per
+    def __init__(self, params:DictConfig):
+        # self.params        = params
+        self.data_location = params.data_location
+        self.val_per       = params.val_per
         self.sample_paths  = self.parse_data()
 
-        self.img_dim       = config.dataset.img_dim
+        self.img_dim            = params.img_dim
+        self.normalization      = params.normalization
+        self.missing_modalities = params.missing_modalities
 
         self.train_samples, self.val_samples, self.test_samples = self.train_test_split()
 
@@ -43,16 +45,14 @@ class MMFloodParser:
         
 
     def get_dataset(self, dataset_type:str, training_mode:str) -> MissingModalityDistillationDataset:
-
-        missing_modalities = self.config.dataset.missing_modalities
         
         x, y = self.read_data(dataset_type)
         
         if dataset_type == 'train':
-            if self.config.dataset.normalization == 'gauss':
+            if self.normalization == 'gauss':
                 self.norm_params.x_mean = x.astype(np.float32).mean()
                 self.norm_params.x_std  = x.astype(np.float32).std()
-            elif self.config.dataset.normalization == 'minmax':
+            elif self.normalization == 'minmax':
                 self.norm_params.x_min = x.astype(np.float32).min()
                 self.norm_params.x_max = x.astype(np.float32).max()
         
@@ -63,6 +63,7 @@ class MMFloodParser:
         s1_paths, dem_paths, mask_paths = [], [], []
 
         paths = self.train_samples if  dataset_type=='train' else self.val_samples if dataset_type=='val' else self.test_samples
+
 
         for item in paths:
             s1_paths.extend([f'{item}/s1_raw/{p}' for p in sorted(os.listdir(f'{item}/s1_raw'))])

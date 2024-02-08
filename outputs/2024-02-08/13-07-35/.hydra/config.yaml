@@ -1,0 +1,9 @@
+seed: 0
+num_epochs: 100
+batch_size: 64
+device: cuda
+dataset:
+  _target_: src.dataset_parsing.MMFlood.MMFloodParser
+  dataset_location: data/mmflood
+model:
+  _target_: src.models.Vnet.VNet
