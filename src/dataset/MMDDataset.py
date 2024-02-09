@@ -20,6 +20,16 @@ class MissingModalityDistillationDataset:
 
         self.norm_params   = self.set_norm_params(norm_params)
         self.filter_data()
+        self.log_norm_params()
+
+    def log_norm_params(self):
+        logging.info(f'Dataset Mode: {self.training_mode}')
+        logging.info(f'Dataset Size: {self.x.shape[0]}')
+        logging.info(f'Normalization Type: {self.norm_params.normalization}')
+        logging.info(f'x_min:  {self.norm_params.x_min}')
+        logging.info(f'x_max:  {self.norm_params.x_max}')
+        logging.info(f'x_mean: {self.norm_params.x_mean}')
+        logging.info(f'x_std:  {self.norm_params.x_std}')
     
     def set_norm_params(self,norm_params:NormParams) -> NormParams:
         if norm_params.x_min is None:

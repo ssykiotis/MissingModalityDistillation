@@ -5,6 +5,7 @@ from ..mm_dataclasses import *
 import os
 import numpy as np
 import rasterio
+import logging
 
 class MMFloodParser:
 
@@ -55,7 +56,7 @@ class MMFloodParser:
             elif self.norm_params.normalization == 'minmax':
                 self.norm_params.x_min = x.astype(np.float32).min(axis = (0,2,3))
                 self.norm_params.x_max = x.astype(np.float32).max(axis = (0,2,3))
-        
+        logging.info(f'Dataset type: {dataset_type}')
         return MissingModalityDistillationDataset(x, y, training_mode, self.norm_params, self.missing_modalities)
 
         
