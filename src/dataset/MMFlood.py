@@ -7,6 +7,7 @@ import os
 import numpy as np
 import rasterio
 import logging
+import random
 
 class MMFloodParser(GeneralDatasetParser):
 
@@ -31,7 +32,7 @@ class MMFloodParser(GeneralDatasetParser):
         """
         paths = [f'{self.data_location}/{f}' for f in sorted(os.listdir(self.data_location))]
         if shuffle:
-            paths.shuffle() #TODO: check if call is correct
+            random.shuffle(paths)
         return paths   
 
     def train_test_split(self) -> tuple[list, list, list]:
