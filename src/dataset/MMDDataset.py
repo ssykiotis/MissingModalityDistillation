@@ -5,19 +5,23 @@ from ..mm_dataclasses import *
 from omegaconf import DictConfig
 
 
+
 class MissingModalityDistillationDataset:
     
     def __init__(self, x: np.ndarray, y:np.ndarray, training_mode:str, norm_params: NormParams,missing_modalities:list = None):
-        self.training_mode    = training_mode
-        self.missing_modalies = missing_modalities
+        
+        self.training_mode = training_mode
+
         self.x = x
         self.y = y
 
-        self.norm_params   = self.set_norm_params(norm_params)
+        if missing_modalities:
+            self.modalities_to_keep = [i for i in range(self.x.shape[1]) if i not in missing_modalities]
 
+        self.norm_params   = self.set_norm_params(norm_params)
         self.filter_data()
     
-    def set_norm_params(self,norm_params:NormParams):
+    def set_norm_params(self,norm_params:NormParams) -> NormParams:
         if norm_params.x_min is None:
             norm_params.x_min = self.x.min(axis = (0,2,3))
             norm_params.x_max = self.x.max(axis = (0,2,3))
@@ -28,7 +32,7 @@ class MissingModalityDistillationDataset:
         
         return norm_params
 
-    def __getitem__(self,index):
+    def __getitem__(self,index) -> tuple[torch.tensor,torch.tensor] | tuple[torch.tensor,torch.tensor,torch.tensor]:
         if self.training_mode != 'distillation':
             x = self.x[index]
             y = self.y[index]
@@ -40,13 +44,17 @@ class MissingModalityDistillationDataset:
         else:
             x = self.x[index]
             y = self.y[index]
-            modalities_to_keep = [i for i in range(x.shape[0]) if i not in self.missing_modalies]
 
-            x_missing = x[modalities_to_keep,:,:]
+            x         = self.normalize(x)
+            x_missing = x[self.modalities_to_keep,:,:]
+
+            x         = torch.tensor(x).contiguous()
+            y         = torch.tensor(y).contiguous()
+            x_missing = torch.tensor(x_missing).contiguous()
 
             return x, x_missing, y
 
-    def normalize(self,x):
+    def normalize(self,x) -> np.ndarray:
         if self.norm_params.normalization == 'minmax':
             return ((x.T-self.norm_params.x_min)/(self.norm_params.x_max-self.norm_params.x_min)).T 
         elif self.norm_params.normalization == 'gauss':
@@ -54,17 +62,19 @@ class MissingModalityDistillationDataset:
         else:
             return x
     
-    #TODO
-    def filter_data(self):
+    def filter_data(self) -> None:
         if self.training_mode in ['teacher','distillation']:
             pass
         elif self.training_mode == 'student':
-            modalities_to_keep = [i for i in range(self.x.shape[1]) if i not in self.missing_modalies]
-            self.x = self.x[:,modalities_to_keep,:,:]
+            self.x = self.x[:,self.modalities_to_keep,:,:]
+            if self.norm_params.normalization == 'minmax':
+                self.norm_params.x_min  = self.norm_params.x_min[self.modalities_to_keep]
+                self.norm_params.x_max  = self.norm_params.x_max[self.modalities_to_keep]
+            if self.norm_params.normalization == 'gauss':
+                self.norm_params.x_mean = self.norm_params.x_mean[self.modalities_to_keep]
+                self.norm_params.x_std  = self.norm_params.x_std[ self.modalities_to_keep]
         pass
 
 
-    
-    #TODO
-    def __len__(self):
-        return(self.x.shape[0])
+        def __len__(self) -> int:
+            return(self.x.shape[0])

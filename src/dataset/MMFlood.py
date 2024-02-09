@@ -34,8 +34,8 @@ class MMFloodParser:
 
     def train_test_split(self) -> tuple[list, list, list]:
         num_samples = len(self.sample_paths)
-        train_end   = int(num_samples * self.val_per)
-        val_end     = int(train_end * self.val_per)
+        val_end     = int(num_samples * self.val_per)
+        train_end   = int(val_end * self.val_per)
 
         train_paths = self.sample_paths[:train_end]
         val_paths   = self.sample_paths[train_end:val_end]
@@ -50,13 +50,13 @@ class MMFloodParser:
         
         if dataset_type == 'train':
             if self.norm_params.normalization == 'gauss':
-                self.norm_params.x_mean = x.astype(np.float32).mean()
-                self.norm_params.x_std  = x.astype(np.float32).std()
+                self.norm_params.x_mean = x.astype(np.float32).mean(axis = (0,2,3))
+                self.norm_params.x_std  = x.astype(np.float32).std(axis = (0,2,3))
             elif self.norm_params.normalization == 'minmax':
-                self.norm_params.x_min = x.astype(np.float32).min()
-                self.norm_params.x_max = x.astype(np.float32).max()
+                self.norm_params.x_min = x.astype(np.float32).min(axis = (0,2,3))
+                self.norm_params.x_max = x.astype(np.float32).max(axis = (0,2,3))
         
-        return MissingModalityDistillationDataset(x, y, training_mode, self.missing_modalities, self.norm_params)
+        return MissingModalityDistillationDataset(x, y, training_mode, self.norm_params, self.missing_modalities)
 
         
     def read_data(self, dataset_type:str) -> [np.ndarray, np.ndarray]:

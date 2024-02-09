@@ -21,7 +21,7 @@ def main(config: DictConfig) -> None:
     setup_seed(config.seed)
 
     ds_parser = hydra.utils.instantiate(config.dataset)
-    dataset = ds_parser.get_dataset('train','teacher')
+    dataset   = ds_parser.get_dataset('train','student')
     trainer   = Trainer(config, ds_parser)
 
     trainer.train()
