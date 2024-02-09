@@ -1,13 +1,14 @@
 from omegaconf import DictConfig
 from .MMDDataset import MissingModalityDistillationDataset
 from ..mm_dataclasses import *
+from .DatasetParser   import GeneralDatasetParser
 
 import os
 import numpy as np
 import rasterio
 import logging
 
-class MMFloodParser:
+class MMFloodParser(GeneralDatasetParser):
 
     def __init__(self, params:DictConfig):
         # self.params        = params
