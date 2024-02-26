@@ -1,0 +1,4 @@
+_target_: src.losses.losses.DiceCELoss
+n_classes: 3
+alpha    : 1.0
+weighted : True
