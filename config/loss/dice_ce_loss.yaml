@@ -1,4 +1,4 @@
-_target_: src.losses.losses.DiceCELoss
+_target_: src.losses.DiceCELoss.DiceCeLoss
 n_classes: 3
 alpha    : 1.0
 weighted : True

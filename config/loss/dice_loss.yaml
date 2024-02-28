@@ -1,0 +1,2 @@
+_target_: src.losses.DiceLoss.DiceLoss
+n_classes: 3

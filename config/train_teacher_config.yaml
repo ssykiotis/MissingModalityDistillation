@@ -3,7 +3,7 @@ defaults:
   - dataset: mmflood
   - model: vnet
   # - optimizer: optimizer
-  # - loss: 
+  - loss: dice_ce_loss
 
 seed       : 0
 num_epochs : 100
