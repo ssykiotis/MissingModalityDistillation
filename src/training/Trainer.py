@@ -3,18 +3,20 @@ import time
 import numpy as np
 import hydra
 
+from omegaconf import DictConfig
+from src.dataset.DatasetParser import *
 
 class Trainer:
 
-    def __init__(self,config):
+    def __init__(self,config:DictConfig, ds_parser: GeneralDatasetParser):
 
         self.model = hydra.utils.instantiate(config.model)
 
 
         self.epochs     = config.epochs
         self.initial_lr = config.lr
-        self.loss_fn   = None
-        self.optimizer = None
+        self.loss_fn    = hydra.utils.instantiate(config.loss)
+        self.optimizer  = None
         
         pass
 

@@ -2,8 +2,10 @@ import torch.nn.functional as F
 import torch
 from torch import nn
 
+
+#TODO type hints
 class DiceLoss(nn.Module):
-    def __init__(self, n_classes):
+    def __init__(self, n_classes: int):
         super().__init__()
         self.n_classes = n_classes
 
@@ -15,14 +17,14 @@ class DiceLoss(nn.Module):
         output_tensor = torch.cat(tensor_list, dim = 1)
         return output_tensor.float()
     
-    def dice_loss(self, predict, target):
+    def dice_loss(self, input:torch.tensor, target:torch.tensor) -> torch.tensor:
         target    = target.float()
         smooth    = 1e-5
-        intersect = torch.sum(predict * target)
-        dice      = (2 * intersect + smooth) / (torch.sum(target * target) + torch.sum(predict * predict) + smooth)
+        intersect = torch.sum(input * target)
+        dice      = (2 * intersect + smooth) / (torch.sum(target * target) + torch.sum(input * input) + smooth)
         return 1.0 - dice
 
-    def forward(self, input, target):
+    def forward(self, input:torch.tensor, target:torch.tensor) -> torch.tensor:
 
         target = self.one_hot_encode(target)
         weight = [1] * self.n_classes

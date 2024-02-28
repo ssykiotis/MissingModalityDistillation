@@ -1,3 +1,6 @@
+from .DiceLoss import DiceLoss
+from .CrossEntropyLoss import *
+
 class DiceCeLoss(nn.Module):
     # predict : output of model (i.e. no softmax)[N,C,*]
     # target : gt of img [N,1,*]
@@ -18,6 +21,6 @@ class DiceCeLoss(nn.Module):
         # label is not one hot encoding [N,1,*]
 
         diceloss = self.diceloss(predict, label)
-        celoss   = self.celoss(predict, label)
+        celoss   = self.celoss(  predict, label)
         loss     = celoss + self.alpha * diceloss
         return diceloss, celoss, loss
