@@ -2,17 +2,23 @@ import logging
 import time
 import numpy as np
 import hydra
+import torch
 
 from omegaconf import DictConfig
 from src.dataset.DatasetParser import *
 import torch.utils.data as data_utils
 import logging
+from torchmetrics.classification import Dice
+from torch.utils.tensorboard import SummaryWriter 
+
+
 
 class Trainer:
 
     def __init__(self,config:DictConfig, ds_parser: GeneralDatasetParser):
 
-        self.model = hydra.utils.instantiate(config.model)
+        self.model      = hydra.utils.instantiate(config.model)
+        self.config     = config
 
 
         self.epochs     = config.epochs
@@ -20,70 +26,48 @@ class Trainer:
         self.loss_fn    = hydra.utils.instantiate(config.loss)
         self.optimizer  = None
 
-        self.train_dl = self.get_dataloader('train')
-        self.val_dl   = self.get_dataloader('val')
-        self.eval_metric = 
+        self.train_dl    = self.get_dataloader('train')
+        self.val_dl      = self.get_dataloader('val')
+        self.eval_metric = Dice(num_classes = config.n_classes, average = 'macro').cuda()
+        self.writer      = SummaryWriter(f'{self.config.log_location}/tensorboard')
+
+        self.best_epoch = 0
+        self.best_dice  = 0.
         
-        pass
 
     #TODO
     def train(self):
+        train_time1 = time.time()
         for epoch in range(1, self.epochs + 1):
             curr_lr = self.intial_lr * (1.0-np.float32(epoch)/np.float32(self.epochs))**(0.9)
             time1 = time.time()
             loss = self.train_one_epoch(curr_lr)
-            logging.info('Epoch %d/%d, loss: %f' % (epoch, self.epochs, loss))
             time2 = time.time()
+            logging.info('Epoch %d/%d, loss: %f' % (epoch, self.epochs, loss))
             logging.info('Epoch %d training time :%f minutes' % (epoch, np.round((time2-time1)/60),2))
             if epoch<self.epochs//4:
                 continue
-            self.validate()
-        pass
-        # time1 = time.time()
-        # dice_evaluator = Dice(num_classes= num_cls, average = 'macro').cuda()
-        # with torch.no_grad():
-        #     for idx, sampled_batch in enumerate(val_loader):
-        #         image,label = sampled_batch
-        #         image,label = image.float().cuda(), label.float().cuda()
-                        
-        #         # predict,_ = test_single_case(model,image,STRIDE,CROP_SIZE,num_cls)
-        #         _,predict = model(image)
-        #         predict = predict.argmax(dim = 1)
-        #         dice_evaluator.update(predict,label.squeeze().int())
+            time1 = time.time()
+            dice_mean = self.validate()
+            time2 = time.time()
+            logging.info('Epoch %d validation time : %f minutes' % (epoch, np.round((time2-time1)/60),2))
+            logging.info('Epoch %d validation Dice : %f ' % (epoch, dice_mean))
+            self.writer.add_scalar('val/dice_mean', dice_mean,epoch)
 
-        #         dice_mean = dice_evaluator.compute().item()
+            if dice_mean>= self.best_dice:
+                self.best_epoch = epoch
+                self.best_dice  = dice_mean
+                torch.save(self.model.state_dict(), f'{self.config.log_location}/model/best_model.pth')
 
+        logging.info('Best dice is: %f'%self.best_dice)
+        logging.info('Best epoch is: %d'%self.best_epoch)
 
-        #         # dice_wt,dice_co,dice_ec,dice_mean = eval_one_dice(predict,label)
-        #         # dice_all_wt.append(dice_wt)
-        #         # dice_all_co.append(dice_co)
-        #         # dice_all_ec.append(dice_ec)
-        #         # dice_all_mean.append(dice_mean)
-        #         # logging.info('Sample [%d], average dice : %f' % (idx, dice_mean))
-        # time2 = time.time()
-        # logging.info('Epoch %d validation time : %f minutes' % (epoch, (time2-time1)/60))
-        # logging.info('Epoch %d validation Dice : %f ' % (epoch, dice_mean))
-    
-
-
-    #         writer.add_scalar('val/dice_mean', dice_mean,epoch)
-    #     if dice_mean>=best_dice:
-    #         best_epoch = epoch
-    #         best_dice = dice_mean
-    #         # best_wt = dice_all_wt
-    #         # best_co = dice_all_co
-    #         # best_ec = dice_all_ec
-    #         torch.save(model.state_dict(), save_model_path+'/best_model.pth')
-    #     model.train()
-    #     logging.info('Best dice is: %f'%best_dice)
-    #     logging.info('Best epoch is: %d'%best_epoch)
-    # writer.close()
-    # train_time2 = time.time()
-    # training_time = (train_time2 - train_time1) / 3600
-    # logging.info('Training finished, tensorboardX writer closed')
-    # logging.info('Best epoch is %d, best mean dice is %f'%(best_epoch,best_dice))
-    # logging.info('Dice of wt/co/ec is %f,%f,%f'%(best_wt,best_co,best_ec))
-    # logging.info('Training total time: %f hours.' % training_time)
+        self.writer.close()
+        train_time2 = time.time()
+        training_time = (train_time2 - train_time1) / 3600
+        logging.info('Training finished, tensorboardX writer closed')
+        logging.info('Best epoch is %d, best mean dice is %f' % (self.best_epoch, self.best_dice))
+        logging.info('Training total time: %f hours.' % training_time)
 
 
 
@@ -111,12 +95,34 @@ class Trainer:
 
     #TODO
     def validate(self):
-        pass
+        self.eval_metric.reset()
+        with torch.no_grad():
+            for idx, batch in enumerate(self.val_dl):
+                x, y = [item.float().cuda() for item in batch]
+                _, logits = self.model(x)
+                y_pred    = logits.argmax(dim = 1)
+
+                self.eval_metric.update(y_pred, y.squeeze().int())
+            dice_mean = self.eval_metric.compute().item()
+        return dice_mean
+
+
 
     #TODO
     def test(self):
         test_dl = self.get_dataloader('test')
-        pass
+        self.eval_metric.reset()
+        with torch.no_grad():
+            for idx, batch in enumerate(self.test_dl):
+                x, y = [item.float().cuda() for item in batch]
+                _, logits = self.model(x)
+                y_pred    = logits.argmax(dim = 1)
+
+                self.eval_metric.update(y_pred, y.squeeze().int())
+            dice_mean = self.eval_metric.compute().item()
+        logging.info('Dice score on the test set is: %f'%self.dice_mean)
+
+         
 
     def get_dataloader(self,mode: str):
         dataset = self.ds_parser.get_dataset(mode)
