@@ -3,7 +3,7 @@ from torch import nn
 
 class VNet(nn.Module):
     def __init__(self, n_channels, n_classes, n_filters, normalization = 'none', has_dropout = False):
-
+        super().__init__()
         self.has_dropout = has_dropout
 
         self.block_one      = ConvBlock(         1, n_channels, n_filters,          normalization = normalization)

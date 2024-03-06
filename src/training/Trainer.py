@@ -20,8 +20,7 @@ class Trainer:
         self.model      = hydra.utils.instantiate(config.model)
         self.config     = config
 
-
-        self.epochs     = config.epochs
+        self.epochs     = config.num_epochs
         self.initial_lr = config.lr
         self.loss_fn    = hydra.utils.instantiate(config.loss)
         self.optimizer  = None
@@ -44,13 +43,13 @@ class Trainer:
             loss = self.train_one_epoch(curr_lr)
             time2 = time.time()
             logging.info('Epoch %d/%d, loss: %f' % (epoch, self.epochs, loss))
-            logging.info('Epoch %d training time :%f minutes' % (epoch, np.round((time2-time1)/60),2))
+            logging.info('Epoch %d training time :%f minutes' % (epoch, np.round((time2-time1)/60), 2))
             if epoch<self.epochs//4:
                 continue
             time1 = time.time()
             dice_mean = self.validate()
             time2 = time.time()
-            logging.info('Epoch %d validation time : %f minutes' % (epoch, np.round((time2-time1)/60),2))
+            logging.info('Epoch %d validation time : %f minutes' % (epoch, np.round((time2-time1)/60), 2))
             logging.info('Epoch %d validation Dice : %f ' % (epoch, dice_mean))
             self.writer.add_scalar('val/dice_mean', dice_mean,epoch)
 
@@ -125,7 +124,7 @@ class Trainer:
          
 
     def get_dataloader(self,mode: str):
-        dataset = self.ds_parser.get_dataset(mode)
+        dataset = self.ds_parser.get_dataset(mode,self.config.training_mode)
         self.norm_params = dataset.norm_params
 
         if mode == "train":
