@@ -86,5 +86,5 @@ class MissingModalityDistillationDataset:
         pass
 
 
-        def __len__(self) -> int:
-            return(self.x.shape[0])
+    def __len__(self) -> int:
+        return(self.x.shape[0])

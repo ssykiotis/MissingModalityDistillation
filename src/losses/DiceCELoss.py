@@ -4,7 +4,7 @@ from .CrossEntropyLoss import *
 class DiceCeLoss(nn.Module):
     # predict : output of model (i.e. no softmax)[N,C,*]
     # target : gt of img [N,1,*]
-    def __init__(self, num_classes, alpha = 1.0, weighted = True):
+    def __init__(self, n_classes, alpha = 1.0, weighted = True):
         '''
         calculate loss:
             celoss + alpha*celoss
@@ -12,9 +12,9 @@ class DiceCeLoss(nn.Module):
         '''
         super().__init__()
         self.alpha       = alpha
-        self.num_classes = num_classes
-        self.diceloss    = DiceLoss(self.num_classes)
-        self.celoss      = WeightedCrossEntropyLoss(self.num_classes) if weighted else RobustCrossEntropyLoss()
+        self.n_classes   = n_classes
+        self.diceloss    = DiceLoss(self.n_classes)
+        self.celoss      = WeightedCrossEntropyLoss(self.n_classes) if weighted else RobustCrossEntropyLoss()
 
     def forward(self, predict, label):
         # predict is output of the model, i.e. without softmax [N,C,*]

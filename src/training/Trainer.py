@@ -3,6 +3,7 @@ import time
 import numpy as np
 import hydra
 import torch
+import os
 
 from omegaconf import DictConfig
 from src.dataset.DatasetParser import *
@@ -17,39 +18,44 @@ class Trainer:
 
     def __init__(self,config:DictConfig, ds_parser: GeneralDatasetParser):
 
-        self.model      = hydra.utils.instantiate(config.model)
         self.config     = config
 
         self.epochs     = config.num_epochs
         self.initial_lr = config.lr
+
+        self.ds_parser  = ds_parser
+
+        self.model      = hydra.utils.instantiate(config.model)
+        self.model      = self.model.cuda()
         self.loss_fn    = hydra.utils.instantiate(config.loss)
-        self.optimizer  = None
+        self.optimizer  = torch.optim.Adam(self.model.parameters(), lr = self.initial_lr, weight_decay = 1e-5)
 
         self.train_dl    = self.get_dataloader('train')
         self.val_dl      = self.get_dataloader('val')
-        self.eval_metric = Dice(num_classes = config.n_classes, average = 'macro').cuda()
+        self.eval_metric = Dice(num_classes = self.config.n_classes, average = 'macro').cuda()
         self.writer      = SummaryWriter(f'{self.config.log_location}/tensorboard')
 
         self.best_epoch = 0
         self.best_dice  = 0.
+        os.mkdir(f'{self.config.log_location}/model')
         
 
     #TODO
     def train(self):
         train_time1 = time.time()
         for epoch in range(1, self.epochs + 1):
-            curr_lr = self.intial_lr * (1.0-np.float32(epoch)/np.float32(self.epochs))**(0.9)
+            curr_lr = self.initial_lr * (1.0-np.float32(epoch)/np.float32(self.epochs))**(0.9)
             time1 = time.time()
             loss = self.train_one_epoch(curr_lr)
             time2 = time.time()
-            logging.info('Epoch %d/%d, loss: %f' % (epoch, self.epochs, loss))
-            logging.info('Epoch %d training time :%f minutes' % (epoch, np.round((time2-time1)/60), 2))
+            logging.info('Epoch %d/%d, lr: %f, loss: %f' % (epoch, self.epochs, curr_lr, loss))
+            logging.info('Epoch %d training time :%f minutes' % (epoch, np.round((time2-time1)/60, 2)))
             if epoch<self.epochs//4:
                 continue
             time1 = time.time()
             dice_mean = self.validate()
             time2 = time.time()
-            logging.info('Epoch %d validation time : %f minutes' % (epoch, np.round((time2-time1)/60), 2))
+            logging.info('Epoch %d validation time : %f minutes' % (epoch, np.round((time2-time1)/60, 2)))
             logging.info('Epoch %d validation Dice : %f ' % (epoch, dice_mean))
             self.writer.add_scalar('val/dice_mean', dice_mean,epoch)
 
@@ -77,7 +83,6 @@ class Trainer:
         for parm in self.optimizer.param_groups:
             parm['lr'] = lr
         loss_values = []
-        time1 = time.time()
         for idx, batch in enumerate(self.train_dl):
             x, y = [item.float().cuda() for item in batch]
 
@@ -94,6 +99,7 @@ class Trainer:
 
     #TODO
     def validate(self):
+        self.model.eval()
         self.eval_metric.reset()
         with torch.no_grad():
             for idx, batch in enumerate(self.val_dl):
@@ -129,14 +135,14 @@ class Trainer:
 
         if mode == "train":
 
-            dataloader = data_utils.Dataloader(dataset,
+            dataloader = data_utils.DataLoader(dataset,
                                                batch_size = self.config.batch_size,
                                                shuffle    = True,
                                                pin_memory = True,
                                                drop_last  = False
                                                )
         else:
-            dataloader = data_utils.Dataloader(dataset,
+            dataloader = data_utils.DataLoader(dataset,
                                                batch_size = self.config.batch_size,
                                                shuffle    = False,
                                                pin_memory = True,

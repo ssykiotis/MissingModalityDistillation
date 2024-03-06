@@ -8,6 +8,8 @@ defaults:
 seed       : 0
 num_epochs : 100
 batch_size : 64
+lr         : 1e-3
 device     : 'cuda'
 training_mode: 'teacher'
 log_location: ''
+n_classes: 2
