@@ -1,12 +1,15 @@
 defaults:
   - _self_
-  - dataset_parser: mmflood
+  - dataset: mmflood
   - model: vnet
   # - optimizer: optimizer
-  # - loss: 
+  - loss: dice_ce_loss
 
 seed       : 0
 num_epochs : 100
 batch_size : 64
+lr         : 1e-3
 device     : 'cuda'
 training_mode: 'baseline'
+log_location: ''
+n_classes: 2
