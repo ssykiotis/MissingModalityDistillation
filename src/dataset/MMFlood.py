@@ -90,9 +90,6 @@ class MMFloodParser(GeneralDatasetParser):
             dem = rasterio.open(p_dem ).read()
             m   = rasterio.open(p_mask).read()
 
-            if dem.min()<0:
-                print(p_dem)
-
             x[idx, :2, :, :] = img
             x[idx,  2, :, :] = dem
 

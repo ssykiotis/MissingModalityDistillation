@@ -11,7 +11,7 @@ import torch.utils.data as data_utils
 import logging
 from torchmetrics.classification import Dice
 from torch.utils.tensorboard import SummaryWriter 
-
+from ptflops import get_model_complexity_info
 
 
 class Trainer:
@@ -27,6 +27,11 @@ class Trainer:
 
         self.model      = hydra.utils.instantiate(config.model)
         self.model      = self.model.cuda()
+
+        macs, params = get_model_complexity_info(self.model, (3, 256, 256), as_strings = True, print_per_layer_stat = False, verbose = False)
+        logging.info('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+        logging.info('{:<30}  {:<8}'.format('Number of parameters: ', params))
+
         self.loss_fn    = hydra.utils.instantiate(config.loss)
         self.optimizer  = torch.optim.Adam(self.model.parameters(), lr = self.initial_lr, weight_decay = 1e-5)
 
@@ -44,7 +49,7 @@ class Trainer:
     def train(self):
         train_time1 = time.time()
         for epoch in range(1, self.epochs + 1):
-            curr_lr = self.initial_lr * (1.0-np.float32(epoch)/np.float32(self.epochs))**(0.9)
+            curr_lr = self.initial_lr * (1.0-np.float32(epoch-1)/np.float32(self.epochs))**(0.9)
             time1 = time.time()
             loss = self.train_one_epoch(curr_lr)
             time2 = time.time()
@@ -64,8 +69,8 @@ class Trainer:
                 self.best_dice  = dice_mean
                 torch.save(self.model.state_dict(), f'{self.config.log_location}/model/best_model.pth')
 
-        logging.info('Best dice is: %f'%self.best_dice)
-        logging.info('Best epoch is: %d'%self.best_epoch)
+        logging.info('Best validation dice is: %f' % self.best_dice)
+        logging.info('Best epoch is:           %d' % self.best_epoch)
 
         self.writer.close()
         train_time2 = time.time()
@@ -115,7 +120,7 @@ class Trainer:
 
     #TODO
     def test(self):
-        test_dl = self.get_dataloader('test')
+        self.test_dl = self.get_dataloader('test')
         self.eval_metric.reset()
         with torch.no_grad():
             for idx, batch in enumerate(self.test_dl):
@@ -124,8 +129,8 @@ class Trainer:
                 y_pred    = logits.argmax(dim = 1)
 
                 self.eval_metric.update(y_pred, y.squeeze().int())
-            dice_mean = self.eval_metric.compute().item()
-        logging.info('Dice score on the test set is: %f'%self.dice_mean)
+            self.test_dice = self.eval_metric.compute().item()
+        logging.info('Dice score on the test set is: %f'%self.test_dice)
 
          
 

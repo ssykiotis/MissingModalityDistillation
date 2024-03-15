@@ -2,4 +2,5 @@ _target_: src.models.Vnet.VNet
 n_channels: 3
 n_classes: 2
 n_filters: 16
+normalization: 'batchnorm'
 # n_channels, n_classes, n_filters, normalization = 'none', has_dropout = False

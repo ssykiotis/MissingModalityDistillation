@@ -28,6 +28,7 @@ def main(config: DictConfig) -> None:
     trainer   = Trainer(config, ds_parser)
 
     trainer.train()
+    trainer.test()
 
 
 
