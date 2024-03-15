@@ -5,11 +5,12 @@ defaults:
   # - optimizer: optimizer
   - loss: dice_ce_loss
 
-seed       : 0
-num_epochs : 100
-batch_size : 64
-lr         : 1e-3
-device     : 'cuda'
+seed         : 0
+num_epochs   : 100
+batch_size   : 64
+lr           : 1e-3
+device       : 'cuda'
 training_mode: 'teacher'
-log_location: ''
-n_classes: 2
+log_location : ''
+n_classes    : 2
+n_channels   : 3
