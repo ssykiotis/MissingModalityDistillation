@@ -28,7 +28,9 @@ class Trainer:
         self.model      = hydra.utils.instantiate(config.model)
         self.model      = self.model.cuda()
 
-        macs, params = get_model_complexity_info(self.model, (self.config.n_channels, 256, 256), as_strings = True, print_per_layer_stat = False, verbose = False)
+        macs, params = get_model_complexity_info(self.model, (self.config.n_channels, 256, 256),\
+                                                 as_strings = True, print_per_layer_stat = False, verbose = False)
+        
         logging.info('{:<30}  {:<8}'.format('Computational complexity: ', macs))
         logging.info('{:<30}  {:<8}'.format('Number of parameters: ',     params))
 
