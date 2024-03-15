@@ -30,18 +30,19 @@ class Trainer:
 
         macs, params = get_model_complexity_info(self.model, (3, 256, 256), as_strings = True, print_per_layer_stat = False, verbose = False)
         logging.info('{:<30}  {:<8}'.format('Computational complexity: ', macs))
-        logging.info('{:<30}  {:<8}'.format('Number of parameters: ', params))
+        logging.info('{:<30}  {:<8}'.format('Number of parameters: ',     params))
 
         self.loss_fn    = hydra.utils.instantiate(config.loss)
         self.optimizer  = torch.optim.Adam(self.model.parameters(), lr = self.initial_lr, weight_decay = 1e-5)
 
         self.train_dl    = self.get_dataloader('train')
         self.val_dl      = self.get_dataloader('val')
+
         self.eval_metric = Dice(num_classes = self.config.n_classes, average = 'macro').cuda()
         self.writer      = SummaryWriter(f'{self.config.log_location}/tensorboard')
 
-        self.best_epoch = 0
-        self.best_dice  = 0.
+        self.best_epoch  = 0
+        self.best_dice   = 0.
         os.mkdir(f'{self.config.log_location}/model')
         
 
@@ -94,9 +95,9 @@ class Trainer:
             features, logits = self.model(x)
             dice_loss, ce_loss, loss = self.loss_fn(logits, y)
             loss_values.append(loss.item())
-            self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            self.optimizer.zero_grad()
         
         epoch_loss = sum(loss_values)/len(loss_values)
         return epoch_loss            
