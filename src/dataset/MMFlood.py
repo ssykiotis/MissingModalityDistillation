@@ -55,7 +55,7 @@ class MMFloodParser(GeneralDatasetParser):
         if dataset_type == 'train':
             if self.norm_params.normalization == 'gauss':
                 self.norm_params.x_mean = x.astype(np.float32).mean(axis = (0,2,3))
-                self.norm_params.x_std  = x.astype(np.float32).std(axis = (0,2,3))
+                self.norm_params.x_std  = x.astype(np.float32).std( axis = (0,2,3))
             elif self.norm_params.normalization == 'minmax':
                 self.norm_params.x_min = x.astype(np.float32).min(axis = (0,2,3))
                 self.norm_params.x_max = x.astype(np.float32).max(axis = (0,2,3))
@@ -66,7 +66,9 @@ class MMFloodParser(GeneralDatasetParser):
     def read_data(self, dataset_type:str) -> [np.ndarray, np.ndarray]:
         s1_paths, dem_paths, mask_paths = [], [], []
 
-        paths = self.train_samples if  dataset_type=='train' else self.val_samples if dataset_type=='val' else self.test_samples
+        paths = self.train_samples if  dataset_type == 'train' else \
+                self.val_samples   if dataset_type  ==  'val'    else \
+                self.test_samples
 
 
         for item in paths:

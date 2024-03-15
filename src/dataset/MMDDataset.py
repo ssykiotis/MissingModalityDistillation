@@ -8,7 +8,7 @@ from omegaconf import DictConfig
 
 class MissingModalityDistillationDataset:
     
-    def __init__(self, x: np.ndarray, y:np.ndarray, training_mode:str, norm_params: NormParams,missing_modalities:list = None):
+    def __init__(self, x: np.ndarray, y:np.ndarray, training_mode:str, norm_params: NormParams, missing_modalities:list = None):
         
         self.training_mode = training_mode
 
@@ -43,26 +43,46 @@ class MissingModalityDistillationDataset:
         return norm_params
 
     def __getitem__(self,index) -> tuple[torch.tensor,torch.tensor] | tuple[torch.tensor,torch.tensor,torch.tensor]:
-        if self.training_mode != 'distillation':
-            x = self.x[index]
-            y = self.y[index]
+        x = self.x[index]
+        y = self.y[index]
+        x = self.normalize(x)
 
-            x = self.normalize(x)
-            x = torch.tensor(x).contiguous()
-            y = torch.tensor(y).contiguous()
-            return x, y
-        else:
-            x = self.x[index]
-            y = self.y[index]
-
-            x         = self.normalize(x)
+        if self.training_mode == 'baseline':
+            x = x[self.modalities_to_keep,:,:]
+        elif self.training_mode == 'distillation':
             x_missing = x[self.modalities_to_keep,:,:]
-
-            x         = torch.tensor(x).contiguous()
-            y         = torch.tensor(y).contiguous()
             x_missing = torch.tensor(x_missing).contiguous()
 
+        x = torch.tensor(x).contiguous()
+        y = torch.tensor(y).contiguous()
+
+        if self.training_mode != 'distillation':
+            return x, y
+        else:
             return x, x_missing, y
+
+        # if self.training_mode == 'teacher':
+        #     x = torch.tensor(x).contiguous()
+        #     y = torch.tensor(y).contiguous()
+        #     return x, y
+        # elif self.training_mode == 'baseline':
+
+        #     x = x[self.modalities_to_keep,:,:]
+        #     x         = torch.tensor(x).contiguous()
+        #     y         = torch.tensor(y).contiguous()
+        #     return x, y
+        # else:
+        #     x = self.x[index]
+        #     y = self.y[index]
+
+        #     x         = self.normalize(x)
+        #     x_missing = x[self.modalities_to_keep,:,:]
+
+        #     x         = torch.tensor(x).contiguous()
+        #     y         = torch.tensor(y).contiguous()
+        #     x_missing = torch.tensor(x_missing).contiguous()
+
+        #     return x, x_missing, y
 
     def normalize(self,x) -> np.ndarray:
         if self.norm_params.normalization == 'minmax':
