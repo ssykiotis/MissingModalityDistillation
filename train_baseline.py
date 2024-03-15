@@ -22,9 +22,9 @@ def main(config: DictConfig) -> None:
     setup_seed(config.seed)
     
     config['log_location'] = HydraConfig.get().runtime.output_dir
+    config.model.n_channels = config['n_channels']
 
     ds_parser = hydra.utils.instantiate(config.dataset)
-    # dataset   = ds_parser.get_dataset('train',config.training_mode)
     trainer   = Trainer(config, ds_parser)
 
     trainer.train()
