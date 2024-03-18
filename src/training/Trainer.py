@@ -19,7 +19,6 @@ class Trainer:
     def __init__(self,config:DictConfig, ds_parser: GeneralDatasetParser):
 
         self.config     = config
-
         self.epochs     = config.num_epochs
         self.initial_lr = config.lr
 
@@ -121,9 +120,10 @@ class Trainer:
 
 
 
-    #TODO
+    #TODO: LOAD BEST MODEL!!!
     def test(self):
         self.test_dl = self.get_dataloader('test')
+        self.model.load_state_dict(torch.load(f'{self.config.log_location}/model/best_model.pth'))
         self.eval_metric.reset()
         with torch.no_grad():
             for idx, batch in enumerate(self.test_dl):
