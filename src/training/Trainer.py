@@ -27,6 +27,10 @@ class Trainer:
         self.model      = hydra.utils.instantiate(config.model)
         self.model      = self.model.cuda()
 
+
+        if self.config.training_mode == 'distillation':
+            self.init_distillation_components()
+
         macs, params = get_model_complexity_info(self.model, (self.config.n_channels, 256, 256),\
                                                  as_strings = True, print_per_layer_stat = False, verbose = False)
         
@@ -81,20 +85,26 @@ class Trainer:
         logging.info('Best epoch is %d, best mean dice is %f' % (self.best_epoch, self.best_dice))
         logging.info('Training total time: %f hours.' % training_time)
 
-
-
-
-    #TODO
     def train_one_epoch(self,lr: float):
+
         self.model.train()
         for parm in self.optimizer.param_groups:
             parm['lr'] = lr
         loss_values = []
         for idx, batch in enumerate(self.train_dl):
-            x, y = [item.float().cuda() for item in batch]
+            x, y,*x_missing = [item.float().cuda() for item in batch]
 
-            features, logits = self.model(x)
-            dice_loss, ce_loss, loss = self.loss_fn(logits, y)
+            if self.config.training_mode == 'distillation':
+                features, logits = self.model(x_missing)
+                with torch.no_grad():
+                    features_t, logits_t = self.teacher_model(x)
+                dice_loss, ce_loss, seg_loss     = self.loss_fn(logits, y)
+                kd_loss                          = self.kd_loss(logits,logits_t)
+                sim_map_s, sim_map_t, proto_loss = self.prototype_loss(features,features_t)
+                loss = self.config.weights.seg * seg_loss + self.config.weights.kd * kd_loss + self.config.weights.proto * proto_loss
+            else:
+                features, logits = self.model(x)
+                dice_loss, ce_loss, loss = self.loss_fn(logits, y)
             loss_values.append(loss.item())
             loss.backward()
             self.optimizer.step()
@@ -110,8 +120,8 @@ class Trainer:
         self.eval_metric.reset()
         with torch.no_grad():
             for idx, batch in enumerate(self.val_dl):
-                x, y = [item.float().cuda() for item in batch]
-                _, logits = self.model(x)
+                x, y, *x_missing = [item.float().cuda() for item in batch]
+                _, logits = self.model(x_missing) if self.config.training_mode == 'distillation' else self.model(x)
                 y_pred    = logits.argmax(dim = 1)
 
                 self.eval_metric.update(y_pred, y.squeeze().int())
@@ -120,15 +130,15 @@ class Trainer:
 
 
 
-    #TODO: LOAD BEST MODEL!!!
     def test(self):
         self.test_dl = self.get_dataloader('test')
         self.model.load_state_dict(torch.load(f'{self.config.log_location}/model/best_model.pth'))
+        logging.info(f'Loading Best Model from epoch {self.best_epoch}')
         self.eval_metric.reset()
         with torch.no_grad():
             for idx, batch in enumerate(self.test_dl):
-                x, y = [item.float().cuda() for item in batch]
-                _, logits = self.model(x)
+                x, y, *x_missing = [item.float().cuda() for item in batch]
+                _, logits = self.model(x_missing) if self.config.training_mode == 'distillation' else self.model(x)
                 y_pred    = logits.argmax(dim = 1)
 
                 self.eval_metric.update(y_pred, y.squeeze().int())
@@ -157,3 +167,11 @@ class Trainer:
                                                drop_last  = False
                                                )
         return dataloader
+
+
+    def init_distillation_components(self):
+        self.teacher_model = hydra.utils.instantiate(self.config.model)
+        self.teacher_model.load_state_dict('teacher_model.pth')
+        self.teacher_model.eval()
+        self.kd_loss    = hydra.utils.instantiate(self.config.kd_loss) 
+        self.proto_loss = hydra.utils.instantiate(self.config.proto_loss)

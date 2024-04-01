@@ -59,7 +59,7 @@ class MissingModalityDistillationDataset:
         if self.training_mode != 'distillation':
             return x, y
         else:
-            return x, x_missing, y
+            return x, y, x_missing
 
         # if self.training_mode == 'teacher':
         #     x = torch.tensor(x).contiguous()

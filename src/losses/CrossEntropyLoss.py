@@ -31,7 +31,6 @@ class WeightedCrossEntropyLoss(nn.Module):
         if len(target.shape) == len(input.shape):
             assert target.shape[1] == 1
             target = target[:, 0]
-        # wce_loss_mean = F.cross_entropy(input, target.long(), weight, reduction = 'mean') #TODO: TESTING
         wce_loss_none = F.cross_entropy(input, target.long(), weight, reduction = 'none')
         wce_loss = 0
         for i in range(self.n_classes):

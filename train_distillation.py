@@ -19,6 +19,9 @@ def main(config: DictConfig) -> None:
 
     setup_seed(config.seed)
 
+    shutil.move(config.teacher_model_path,'teacher_model.pth')
+
+
     ds_parser = #hydra.utils.instantiate dataset_parser
     trainer   = Trainer(config, ds_parser)
 

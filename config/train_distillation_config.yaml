@@ -1,1 +1,12 @@
 training_mode: 'distillation'
+
+teacher_model_path:
+loss:
+kd_loss:
+proto_loss:
+
+
+weights:
+  seg: 1
+  kd: 0.2
+  proto: 0.3

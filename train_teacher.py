@@ -5,6 +5,8 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from src.utils import *
 from src.training.Trainer import *
+import shutil
+
 
 
 
@@ -23,6 +25,7 @@ def main(config: DictConfig) -> None:
     
     config['log_location'] = HydraConfig.get().runtime.output_dir
     config.model.n_channels = config['n_channels']
+
     
     ds_parser = hydra.utils.instantiate(config.dataset)
     trainer   = Trainer(config, ds_parser)
