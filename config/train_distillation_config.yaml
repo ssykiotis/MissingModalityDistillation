@@ -1,10 +1,28 @@
+defaults:
+  - _self_
+  - dataset: mmflood
+  - model: vnet
+  - loss: 
+    - dice_ce_loss
+    - kd_loss
+    - prototype_loss  
+
+
+device       : 'cuda'
+seed         : 0
+num_epochs   : 100
+batch_size   : 64
+lr           : 1e-3
+
+n_classes    : 2
+n_channels   : 2
+
+n_teacher_channels: 3
+
+
 training_mode: 'distillation'
-
-teacher_model_path:
-loss:
-kd_loss:
-proto_loss:
-
+log_location : ''
+teacher_model_path: 'teacher_model.pth'
 
 weights:
   seg: 1

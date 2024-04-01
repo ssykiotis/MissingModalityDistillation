@@ -23,9 +23,10 @@ class Trainer:
         self.initial_lr = config.lr
 
         self.ds_parser  = ds_parser
+        self.device     = config.device
 
         self.model      = hydra.utils.instantiate(config.model)
-        self.model      = self.model.cuda()
+        self.model      = self.model.to(self.device)
 
 
         if self.config.training_mode == 'distillation':
@@ -37,7 +38,7 @@ class Trainer:
         logging.info('{:<30}  {:<8}'.format('Computational complexity: ', macs))
         logging.info('{:<30}  {:<8}'.format('Number of parameters: ',     params))
 
-        self.loss_fn    = hydra.utils.instantiate(config.loss)
+        self.loss_fn    = hydra.utils.instantiate(config.loss.seg_loss)
         self.optimizer  = torch.optim.Adam(self.model.parameters(), lr = self.initial_lr, weight_decay = 1e-5)
 
         self.train_dl    = self.get_dataloader('train')
@@ -95,12 +96,13 @@ class Trainer:
             x, y,*x_missing = [item.float().cuda() for item in batch]
 
             if self.config.training_mode == 'distillation':
+                x_missing = x_missing[0]
                 features, logits = self.model(x_missing)
                 with torch.no_grad():
                     features_t, logits_t = self.teacher_model(x)
                 dice_loss, ce_loss, seg_loss     = self.loss_fn(logits, y)
                 kd_loss                          = self.kd_loss(logits,logits_t)
-                sim_map_s, sim_map_t, proto_loss = self.prototype_loss(features,features_t)
+                sim_map_s, sim_map_t, proto_loss = self.prototype_loss(features,features_t,y)
                 loss = self.config.weights.seg * seg_loss + self.config.weights.kd * kd_loss + self.config.weights.proto * proto_loss
             else:
                 features, logits = self.model(x)
@@ -121,7 +123,7 @@ class Trainer:
         with torch.no_grad():
             for idx, batch in enumerate(self.val_dl):
                 x, y, *x_missing = [item.float().cuda() for item in batch]
-                _, logits = self.model(x_missing) if self.config.training_mode == 'distillation' else self.model(x)
+                _, logits = self.model(x_missing[0]) if self.config.training_mode == 'distillation' else self.model(x)
                 y_pred    = logits.argmax(dim = 1)
 
                 self.eval_metric.update(y_pred, y.squeeze().int())
@@ -138,7 +140,7 @@ class Trainer:
         with torch.no_grad():
             for idx, batch in enumerate(self.test_dl):
                 x, y, *x_missing = [item.float().cuda() for item in batch]
-                _, logits = self.model(x_missing) if self.config.training_mode == 'distillation' else self.model(x)
+                _, logits = self.model(x_missing[0]) if self.config.training_mode == 'distillation' else self.model(x)
                 y_pred    = logits.argmax(dim = 1)
 
                 self.eval_metric.update(y_pred, y.squeeze().int())
@@ -170,8 +172,10 @@ class Trainer:
 
 
     def init_distillation_components(self):
+        self.config.model.n_channels = self.config.n_teacher_channels
         self.teacher_model = hydra.utils.instantiate(self.config.model)
-        self.teacher_model.load_state_dict('teacher_model.pth')
+        self.teacher_model.load_state_dict(torch.load('teacher_model.pth'))
+        self.teacher_model.to(self.device)
         self.teacher_model.eval()
-        self.kd_loss    = hydra.utils.instantiate(self.config.kd_loss) 
-        self.proto_loss = hydra.utils.instantiate(self.config.proto_loss)
+        self.kd_loss    = hydra.utils.instantiate(self.config.loss.kd_loss) 
+        self.prototype_loss = hydra.utils.instantiate(self.config.loss.prototype_loss)

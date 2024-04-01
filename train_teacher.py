@@ -5,7 +5,6 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from src.utils import *
 from src.training.Trainer import *
-import shutil
 
 
 

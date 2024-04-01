@@ -1,2 +1,3 @@
-_target_: src.losses.KDLoss.KDLoss
-T: 10
+kd_loss:
+  _target_: src.losses.KDLoss.KDLoss
+  T: 10
