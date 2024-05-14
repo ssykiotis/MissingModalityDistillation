@@ -22,5 +22,5 @@ class DiceCeLoss(nn.Module):
 
         diceloss = self.diceloss(predict, label)
         celoss   = self.celoss(  predict, label)
-        loss     = celoss + self.alpha * diceloss
+        loss     = (1-self.alpha) * celoss + self.alpha * diceloss
         return diceloss, celoss, loss

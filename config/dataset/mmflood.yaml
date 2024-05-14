@@ -1,6 +1,6 @@
 _target_: src.dataset.MMFlood.MMFloodParser
 params:
-  data_location: 'data/mmflood'
+  data_location: 'data/mmflood_new'
   missing_modalities: [2]
   val_per           : 0.8
   img_dim           : 256
