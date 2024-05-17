@@ -174,7 +174,7 @@ class Trainer:
     def init_distillation_components(self):
         self.config.model.n_channels = self.config.n_teacher_channels
         self.teacher_model = hydra.utils.instantiate(self.config.model)
-        self.teacher_model.load_state_dict(torch.load('teacher_model.pth'))
+        self.teacher_model.load_state_dict(torch.load(self.config.teacher_model_path))
         self.teacher_model.to(self.device)
         self.teacher_model.eval()
         self.kd_loss    = hydra.utils.instantiate(self.config.loss.kd_loss) 
