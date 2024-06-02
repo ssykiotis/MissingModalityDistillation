@@ -33,3 +33,6 @@ train_protokd:  DiceCELoss(num_cls) dice + crossentropy +seg
 
 replace .cuda() with .to(device)
 prototypeloss n_classes from main config
+
+
+#TODO: keep image names
