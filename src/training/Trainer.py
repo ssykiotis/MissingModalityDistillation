@@ -44,7 +44,7 @@ class Trainer:
         self.train_dl    = self.get_dataloader('train')
         self.val_dl      = self.get_dataloader('val')
 
-        self.eval_metric = Dice(num_classes = self.config.n_classes, average = 'macro').cuda()
+        self.eval_metric = Dice(num_classes = self.config.n_classes, average = 'macro').to(self.config.device)
         self.writer      = SummaryWriter(f'{self.config.log_location}/tensorboard')
 
         self.best_epoch  = 0
@@ -132,9 +132,13 @@ class Trainer:
 
 
 
-    def test(self):
+    def test(self,mode = None):
         self.test_dl = self.get_dataloader('test')
-        self.model.load_state_dict(torch.load(f'{self.config.log_location}/model/best_model.pth'))
+        if mode == 'inference':
+            self.model.load_state_dict(torch.load(self.config.student_model_path))
+            os.mkdir(f'{self.config.log_location}/images')
+        else:
+            self.model.load_state_dict(torch.load(f'{self.config.log_location}/model/best_model.pth'))
         logging.info(f'Loading Best Model from epoch {self.best_epoch}')
         self.eval_metric.reset()
         with torch.no_grad():
@@ -142,6 +146,9 @@ class Trainer:
                 x, y, *x_missing = [item.float().cuda() for item in batch]
                 _, logits = self.model(x_missing[0]) if self.config.training_mode == 'distillation' else self.model(x)
                 y_pred    = logits.argmax(dim = 1)
+
+                # if mode =='inference':
+                #     #TODO
 
                 self.eval_metric.update(y_pred, y.squeeze().int())
             self.test_dice = self.eval_metric.compute().item()
