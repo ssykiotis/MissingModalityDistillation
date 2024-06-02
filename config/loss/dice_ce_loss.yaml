@@ -1,5 +1,5 @@
 seg_loss:
   _target_: src.losses.DiceCELoss.DiceCeLoss
   n_classes: 2
-  alpha    : 1.0
+  alpha    : 0.7
   weighted : True

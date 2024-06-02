@@ -12,7 +12,7 @@ device       : 'cuda'
 seed         : 0
 num_epochs   : 100
 batch_size   : 64
-lr           : 1e-3
+lr           : 5e-4
 
 n_classes    : 2
 n_channels   : 2
@@ -22,7 +22,7 @@ n_teacher_channels: 3
 
 training_mode: 'distillation'
 log_location : ''
-teacher_model_path: 'teacher_model.pth'
+teacher_model_path: '/home/stavros/Desktop/MissingModalityDistillation/multirun/2024-05-15/21-06-41/2/model/best_model.pth'
 
 weights:
   seg: 1
